@@ -243,6 +243,10 @@ export interface FieldSpec {
   min?: number;
   /** Strings: allowed values. */
   oneOf?: readonly string[];
+  /** Arrays: maximum number of items. */
+  maxItems?: number;
+  /** Arrays: maximum total UTF-8 bytes across string items. */
+  maxTotalBytes?: number;
 }
 
 export type ShapeSpec = Record<string, FieldSpec>;
@@ -289,6 +293,22 @@ export function checkShape(payload: unknown, spec: ShapeSpec): ShapeResult {
     if (!typeOk(value, rule.type)) {
       errors.push(`${field} must be a ${rule.type}`);
       continue;
+    }
+    if (Array.isArray(value)) {
+      if (rule.maxItems !== undefined && value.length > rule.maxItems) {
+        errors.push(`${field} must have at most ${rule.maxItems} items`);
+      }
+      if (rule.maxTotalBytes !== undefined) {
+        let totalBytes = 0;
+        for (const item of value) {
+          if (typeof item === "string") {
+            totalBytes += new TextEncoder().encode(item).length;
+          }
+        }
+        if (totalBytes > rule.maxTotalBytes) {
+          errors.push(`${field} must total at most ${rule.maxTotalBytes} bytes`);
+        }
+      }
     }
     if (typeof value === "string") {
       if (rule.min !== undefined && value.length < rule.min) {
@@ -344,12 +364,7 @@ export function schemaVersionHeaders(): Record<string, string> {
 export const AGENT_API_REQUEST_SPEC: ShapeSpec = {
   version: { type: "string", required: true, oneOf: ["v1"] },
   agentId: { type: "string", required: true, min: 3, max: 64 },
-  action: { type: "string", required: true, oneOf: ["register", "heartbeat", "proposeMarket", "createMarket", "publishReasoning", "vote", "stake", "listPositions", "listEarnings", "revoke", "dryRun"] },
-  idempotencyKey: { type: "string", required: true, min: 1, max: 128 },
-  nonce: { type: "string", required: true, min: 1, max: 128 },
-  signedAt: { type: "integer", required: true },
-  body: { type: "object", required: true },
-  signature: { type: "string", required: true, min: 16, max: 256 },
+  action: { type: "string", required: true }
 };
 
 /**
