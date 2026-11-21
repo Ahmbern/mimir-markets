@@ -268,6 +268,10 @@ async function applyCouncilPreflight(candidates: ClaimCandidate[]): Promise<Clai
       );
       return null;
     });
+    if (!result) continue;
+    kept.push({ candidate, score: result.score });
+  }
+  return kept.map((entry) => entry.candidate);
 
     if (!result || result.opinions.length === 0 || result.averageScore === null) {
       console.warn(

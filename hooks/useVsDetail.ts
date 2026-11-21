@@ -181,12 +181,51 @@ export interface UseVsDetailResult {
   checkChallengeRecovery: () => Promise<void>;
   /** Clear a resolved (or expired) recovery record. No-op while blocking. */
   dismissChallengeRecovery: () => void;
+  /** Challenge intent review bound to claim, wallet and stake revision. */
+  intentReview: ChallengeIntentReview | null;
+  /** Capture the current challenge intent for review. */
+  captureChallengeIntent: () => ChallengeIntentReview | null;
+  /** Discard the captured challenge intent review. */
+  clearChallengeIntent: () => void;
+  /**
+   * Set to the new account address when the connected wallet changes after
+   * an authorization was given; null otherwise. The submit path must require
+   * re-authorization while this is non-null for the current account.
+   */
+  authorizationClearedFor: string | null;
+}
+
+/**
+ * Challenge intent review: a snapshot of what the user is about to commit to.
+ * It is bound to the account, stake amount and claim revision it was built
+ * from; any change to those inputs invalidates it.
+ */
+export interface ChallengeIntentReview {
+  /** Exact USDC stake (integer base units) the user intends to commit. */
+  stakeAmount: number;
+  /** Current claim statement shown to the user. */
+  claimStatement: string;
+  /** Network the intent applies to. */
+  network: string | null;
+  /** Account the intent was reviewed under. */
+  account: string | null;
+  /** Revision key binding the review to claim + wallet + amount. */
+  revisionKey: string;
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /** Holds the mutable generation counter outside React state to avoid stale closures. */
 type GenerationRef = { current: number };
+
+/** Build a deterministic revision key from claim, account and amount. */
+function buildRevisionKey(
+  claimStatement: string | null,
+  account: string | null | undefined,
+  stakeAmount: number | null
+): string {
+  return JSON.stringify([claimStatement ?? "", account ?? "", stakeAmount ?? null]);
+}
 
 // ── Hook implementation ───────────────────────────────────────────────────────
 
@@ -252,6 +291,50 @@ export function useVsDetail({
    */
   const generationRef = useRef(0);
 
+  // ── Challenge intent review ───────────────────────────────────────────────
+
+  const [intentReview, setIntentReview] = useState<ChallengeIntentReview | null>(null);
+
+  const currentStakeAmount = Number.parseInt(challengeStake, 10);
+  const currentRevisionKey = buildRevisionKey(
+    vs?.claim_statement ?? null,
+    address,
+    Number.isFinite(currentStakeAmount) ? currentStakeAmount : null
+  );
+
+  /**
+   * Invalidate the review whenever the account, stake amount or claim
+   * revision no longer matches the one it was captured under.
+   */
+  useEffect(() => {
+    setIntentReview((prev) => {
+      if (prev && prev.revisionKey !== currentRevisionKey) {
+        return null;
+      }
+      return prev;
+    });
+  }, [currentRevisionKey]);
+
+  const captureChallengeIntent = useCallback((): ChallengeIntentReview | null => {
+    if (!vs || !Number.isFinite(currentStakeAmount) || currentStakeAmount <= 0) {
+      setIntentReview(null);
+      return null;
+    }
+    const review: ChallengeIntentReview = {
+      stakeAmount: currentStakeAmount,
+      claimStatement: vs.claim_statement,
+      network: (vs as { network?: string }).network ?? null,
+      account: address ?? null,
+      revisionKey: currentRevisionKey,
+    };
+    setIntentReview(review);
+    return review;
+  }, [vs, currentStakeAmount, address, currentRevisionKey]);
+
+  const clearChallengeIntent = useCallback(() => {
+    setIntentReview(null);
+  }, []);
+
   // ── vsId change reset ─────────────────────────────────────────────────────
 
   /**
@@ -275,6 +358,7 @@ export function useVsDetail({
       setActivity([]);
       setActivityLoading(false);
       setActivityError(null);
+      setIntentReview(null);
     }
     prevVsIdRef.current = vsId;
   }, [vsId]);
@@ -676,6 +760,14 @@ export function useVsDetail({
     activity,
     activityLoading,
     activityError,
+    challengeRecovery,
+    challengeRecoveryChecking,
+    beginChallengeRecovery,
+    checkChallengeRecovery,
+    dismissChallengeRecovery,
+    intentReview,
+    captureChallengeIntent,
+    clearChallengeIntent,
     authorizationClearedFor,
   };
 }
