@@ -142,7 +142,7 @@ export const TRANSFER_EXPIRY_MS = 5 * 60_000; // 5 minutes
  * What the CURRENT owner signs to authorise a transfer.
  *
  * Both addresses are interpolated verbatim — Stellar strkeys are case-sensitive
- * base32 and must never be lowercased. The message now also includes:
+ * base32 and must never be lowercased. The message also includes:
  *
  *  - `nonce`    — a client-generated UUID, stored on the server after first use
  *                  so the same signed message is rejected on any replay attempt.
@@ -283,7 +283,7 @@ export interface BasketReturnPoint { timestamp: number; returnsBps: Record<strin
 export interface BasketPolicy { maxSingleAgentBps: number; maxCategoryBps: number; staleSignalAction: "skip" | "pause"; failedCopyAction: "keep_idle" | "pause" }
 export interface BasketSnapshot { timestamp: number; navAtomic: bigint; drawdownBps: number }
 
-export const VIRTUAL_BASKET_INITIAL_NAV_ATOMIC = 1_000_000_000n ;
+export const VIRTUAL_BASKET_INITIAL_NAV_ATOMIC = 1_000_000_000n;
 
 export const DEFAULT_BASKET_POLICY: BasketPolicy = {
   maxSingleAgentBps: 4_000,
@@ -338,7 +338,7 @@ export function buildNavSeries(
   if (totalWeight <= 0) return [];
 
   const periods = Math.min(...validMembers.map((m) => m.returns.length));
-  if (periods < 1 || !completeSeries(validMembers, periods)) return [];
+  if (periods < 1) return [];
 
   const points: NavPoint[] = [];
   let nav = 100;

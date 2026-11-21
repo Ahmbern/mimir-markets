@@ -103,7 +103,7 @@ describe('classifyXmtpThreadError', () => {
   it('classifies generic Error', () => {
     const out = classifyXmtpThreadError(new Error('boom'));
     expect(typeof out).toBe('string');
-    expect(out.length).toBeGreaterThan(0);
+    expect((out as string).length).toBeGreaterThan(0);
   });
 
   it('classifies non-Error values', () => {
