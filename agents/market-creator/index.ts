@@ -1,5 +1,5 @@
 /**
- * Dedupe helpers for the market-creator worker.
+ * Market-creator worker entry point.
  *
  * Extracted from index.ts so they can be unit-tested offline. Behaviour is
  * unchanged: the worker imports these and the tests pin the normalization and
@@ -231,9 +231,6 @@ const PREFLIGHT_DELAY_MS = Number(process.env.MARKET_CREATOR_PREFLIGHT_DELAY_MS 
 requireEnv(["CREATOR_SECRET"]);
 requireAnyLLMKey();
 
-// ── Clients ───────────────────────────────────────────────────────────────────
-const CREATOR        = getCreatorWallet();
-const CREATOR_ADDR   = CREATOR.address;
 const CREATOR_PAYER  = payingWalletFor(CREATOR);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
