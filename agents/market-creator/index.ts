@@ -108,9 +108,7 @@ import { reconcileSettlements } from "../../lib/server/settlement-index";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const CONTRACT_ID         = requireMarketContractId();
-const CREATOR_STAKE_USDC = Number(
-  process.env.CREATOR_STAKE_USDC ?? "2"
-);
+const CREATOR_STAKE_USDC = Number(process.env.CREATOR_STAKE_USDC ?? "2");
 const MAX_CLAIMS_PER_RUN  = Number(process.env.MAX_CLAIMS_PER_RUN ?? "5");
 const MAX_ACTIVE_CLAIMS   = Number(process.env.MAX_ACTIVE_CLAIMS ?? "30");
 const RUN_INTERVAL_HOURS  = Number(process.env.RUN_INTERVAL_HOURS ?? "6");
@@ -1006,4 +1004,3 @@ main().catch((err) => {
   console.error("[market-creator] Fatal:", err);
   process.exit(1);
 });
-
